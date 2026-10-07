@@ -1090,7 +1090,7 @@ export default function Home() {
                <polyline points="21 15 16 10 5 21"></polyline>
             </svg>
           </div>
-          <h1 className="text-lg font-bold text-slate-800 tracking-tight">ai + draw.io <span className="text-slate-400 font-normal text-sm ml-2">@小傅哥</span></h1>
+          <h1 className="text-lg font-bold text-slate-800 tracking-tight">ai + draw.io</h1>
         </div>
         
         <div className="flex items-center gap-3">

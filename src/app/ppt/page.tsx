@@ -2239,7 +2239,7 @@ ${content}`;
           <div className="bg-indigo-600 p-1.5 rounded-lg shadow-sm shadow-indigo-200">
             <Icons.FilePresentation className="text-white w-5 h-5" />
           </div>
-          <h1 className="text-lg font-bold text-slate-800 tracking-tight">AI PPT <span className="text-slate-400 font-normal text-sm ml-2">@小傅哥</span></h1>
+          <h1 className="text-lg font-bold text-slate-800 tracking-tight">AI PPT</h1>
         </div>
 
         <div className="flex items-center gap-3">

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Agent-Draw-IO",
-  description: "智能体交互绘图 @小傅哥",
+  description: "智能体交互绘图",
 };
 
 import Script from "next/script";

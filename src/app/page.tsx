@@ -272,7 +272,7 @@ export default function Lobby() {
 
           {/* Footer hint */}
           <p className="text-center text-[11px] text-[rgba(255,255,255,0.3)] mt-16">
-            AI Agent Scaffold · @小傅哥 · 更多工具持续接入中…
+            AI Agent Scaffold · 更多工具持续接入中…
           </p>
         </div>
       </main>
