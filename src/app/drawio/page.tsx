@@ -809,6 +809,15 @@ export default function Home() {
               break;
             }
 
+            case 'raw_text': {
+              if (chunk.content) {
+                agentTextContent += chunk.content;
+                accumulatedContent += chunk.content;
+                setMessages(prev => prev.map(m => m.id === agentMsgId ? { ...m, content: accumulatedContent, steps: [...accumulatedSteps] } : m));
+              }
+              break;
+            }
+
             case 'user': {
               // AI returns a text response (not a diagram)
               if (chunk.content) {

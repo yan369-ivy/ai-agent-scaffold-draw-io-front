@@ -1351,8 +1351,8 @@ ${content}`;
             updateStep(phase, currentPhaseLabel, '');
           }
 
-          if (chunk.type === 'ppt_raw') {
-            const rawContent = (chunk as PptRawChunk).raw || '';
+          if (chunk.type === 'ppt_raw' || chunk.type === 'raw_text') {
+            const rawContent = chunk.type === 'ppt_raw' ? (chunk as PptRawChunk).raw || '' : chunk.content;
             accumulatedText += rawContent;
 
             const partialSlides = tryExtractPartialSlides(accumulatedText);
@@ -1484,6 +1484,8 @@ ${content}`;
                 } catch {
                   accumulatedContent += (accumulatedContent ? '\n\n' : '') + '收到响应，但无法解析 PPT 数据。';
                 }
+              } else {
+                accumulatedContent += (accumulatedContent ? '\n\n' : '') + displayContent;
               }
               setMessages(prev => prev.map(m => m.id === agentMsgId ? { ...m, content: accumulatedContent, steps: [...accumulatedSteps] } : m));
             }

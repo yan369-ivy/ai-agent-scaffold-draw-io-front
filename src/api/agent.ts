@@ -61,6 +61,11 @@ export interface UserChunk {
     content: string;
 }
 
+export interface RawTextChunk {
+    type: 'raw_text';
+    content: string;
+}
+
 export interface DoneChunk {
     type: 'done';
 }
@@ -89,7 +94,7 @@ export interface TokenChunk {
     content: string;
 }
 
-export type StreamChunk = DrawioNodeChunk | DrawioEdgeChunk | DrawioDoneChunk | DrawioLegacyChunk | StatusChunk | ErrorChunk | UserChunk | DoneChunk | PptSlideChunk | PptDoneChunk | PptRawChunk | TokenChunk;
+export type StreamChunk = DrawioNodeChunk | DrawioEdgeChunk | DrawioDoneChunk | DrawioLegacyChunk | StatusChunk | ErrorChunk | UserChunk | RawTextChunk | DoneChunk | PptSlideChunk | PptDoneChunk | PptRawChunk | TokenChunk;
 
 export interface StreamEvent {
     phase: 'analyzing' | 'drawing' | 'reviewing' | 'thinking' | 'error' | 'done' | 'generating';
@@ -146,8 +151,7 @@ export const agentApi = {
     /**
      * Chat Stream (SSE-like streaming)
      * Path: /api/v1/chat_stream
-     * Receives structured drawio events: nodes, edges, and final XML
-     * Uses ReadableStream to process server-sent events line by line
+     * Accepts newline-delimited structured events or plain text from the scaffold backend.
      */
     chatStream: async (
         data: ChatRequestDTO,
@@ -176,39 +180,88 @@ export const agentApi = {
             const reader = response.body!.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let mode: 'detect' | 'structured' | 'plain' = 'detect';
+
+            const parseEvent = (line: string): StreamEvent | null => {
+                try {
+                    const value: unknown = JSON.parse(line);
+                    if (value && typeof value === 'object' && 'phase' in value && 'chunk' in value &&
+                        typeof value.phase === 'string' && value.chunk && typeof value.chunk === 'object' &&
+                        'type' in value.chunk && typeof value.chunk.type === 'string') {
+                        return value as StreamEvent;
+                    }
+                } catch {
+                    // Plain text may also start with JSON-like content.
+                }
+                return null;
+            };
+
+            const emitPlainText = (content: string) => {
+                if (content) onEvent({ phase: 'thinking', chunk: { type: 'raw_text', content } });
+            };
+
+            const processStructuredLines = () => {
+                let lineEnd = buffer.indexOf('\n');
+                while (lineEnd !== -1) {
+                    const line = buffer.slice(0, lineEnd).trim();
+                    buffer = buffer.slice(lineEnd + 1);
+                    if (line) {
+                        const event = parseEvent(line);
+                        if (event) onEvent(event);
+                        else console.warn('Failed to parse stream event:', line);
+                    }
+                    lineEnd = buffer.indexOf('\n');
+                }
+            };
+
+            const processText = (text: string) => {
+                if (mode === 'plain') {
+                    emitPlainText(text);
+                    return;
+                }
+
+                buffer += text;
+                if (mode === 'detect') {
+                    const candidate = buffer.trimStart();
+                    if (!candidate) return;
+                    if (!candidate.startsWith('{')) {
+                        mode = 'plain';
+                        emitPlainText(buffer);
+                        buffer = '';
+                        return;
+                    }
+
+                    const lineEnd = candidate.indexOf('\n');
+                    if (lineEnd === -1) return;
+                    if (!parseEvent(candidate.slice(0, lineEnd).trim())) {
+                        mode = 'plain';
+                        emitPlainText(buffer);
+                        buffer = '';
+                        return;
+                    }
+                    mode = 'structured';
+                    buffer = candidate;
+                }
+                processStructuredLines();
+            };
 
             const processStream = async () => {
                 try {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
-
-                        buffer += decoder.decode(value, { stream: true });
-
-                        // Process complete lines
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-                        for (const line of lines) {
-                            const trimmed = line.trim();
-                            if (!trimmed) continue;
-
-                            try {
-                                const event: StreamEvent = JSON.parse(trimmed);
-                                onEvent(event);
-                            } catch (parseErr) {
-                                // If JSON parse fails, treat as raw status text
-                                console.warn('Failed to parse stream event:', trimmed, parseErr);
-                            }
-                        }
+                        processText(decoder.decode(value, { stream: true }));
                     }
 
-                    // Process any remaining buffer
-                    if (buffer.trim()) {
-                        try {
-                            const event: StreamEvent = JSON.parse(buffer.trim());
-                            onEvent(event);
-                        } catch {}
+                    processText(decoder.decode());
+                    if (mode === 'detect') {
+                        const event = parseEvent(buffer.trim());
+                        if (event) onEvent(event);
+                        else emitPlainText(buffer);
+                    } else if (mode === 'structured' && buffer.trim()) {
+                        const event = parseEvent(buffer.trim());
+                        if (event) onEvent(event);
+                        else console.warn('Failed to parse stream event:', buffer);
                     }
 
                     // Only call onComplete if we didn't abort
