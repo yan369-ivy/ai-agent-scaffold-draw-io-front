@@ -1384,7 +1384,7 @@ export default function Home() {
                         )}
 
                         {/* Empty state while generating */}
-                        {msg.role === 'agent' && !msg.content && !msg.reasoning && isSending && (
+                        {index === messages.length - 1 && msg.role === 'agent' && !msg.content && !msg.reasoning && isSending && (
                            <div className="flex gap-1 items-center px-4 py-3 text-sm shadow-sm bg-white border border-indigo-100 text-indigo-600 rounded-2xl rounded-tl-sm">
                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -1396,24 +1396,6 @@ export default function Home() {
                 </div>
               );
             })}
-
-            {/* Stream Progress Indicator */}
-            {isSending && streamPhase !== 'done' && (
-              <div className="flex gap-3 flex-row animate-in fade-in duration-300">
-                <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-sm mt-1 ring-2 ring-white bg-white text-indigo-500 border border-slate-100 opacity-50">
-                  <Icons.Bot className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col max-w-[85%]">
-                  <div className="px-4 py-3 text-sm shadow-sm bg-white border border-indigo-100 text-indigo-600 rounded-2xl rounded-tl-sm flex items-center gap-3">
-                    <div className="flex gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div ref={messagesEndRef} />
           </div>
